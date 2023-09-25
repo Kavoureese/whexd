@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "C/C++: cl.exe build and debug active file",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
+            "args": ["testfile.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug"
+        }
+    ],
+    "version": "2.0.0"
+}
