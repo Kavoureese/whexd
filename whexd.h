@@ -1,7 +1,25 @@
+/*
+    whexd - A hexdump utility for Windows
+    Copyright (C) 2023 Zisis Avouris
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef WHEXD_H
 #define WHEXD_H
 
-#define VERSION "v0.1"
+#define VERSION "v0.2"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,48 +35,49 @@ typedef uint8_t u8;
 #define __WHEXD_CONTROL_CHAR_REPLACEMENT    0x2e    // Dot "."
 
 // Print modes
-#define __WHEXD_MODE_TWO_BYTE_HEX   0x00    // -x, --two-bytes-hex (Default)
-#define __WHEXD_MODE_ONE_BYTE_HEX   0x01    // -X, --one-byte-hex
-#define __WHEXD_MODE_TWO_BYTE_OCT   0x02    // -o, --two-bytes-octal
-#define __WHEXD_MODE_ONE_BYTE_OCT   0x03    // -b, --one-byte-octal
-#define __WHEXD_MODE_TWO_BYTE_DEC   0x04    // -d, --two-bytes-decimal
-#define __WHEXD_MODE_ONE_BYTE_CHR   0x05    // -c, --one-byte-char
-#define __WHEXD_MODE_CANONICAL      0x06    // -C, --canonical
+#define WHEXD_MODE_TWO_BYTE_HEX   0x00    // -x, --two-bytes-hex (Default)
+#define WHEXD_MODE_ONE_BYTE_HEX   0x01    // -X, --one-byte-hex
+#define WHEXD_MODE_TWO_BYTE_OCT   0x02    // -o, --two-bytes-octal
+#define WHEXD_MODE_ONE_BYTE_OCT   0x03    // -b, --one-byte-octal
+#define WHEXD_MODE_TWO_BYTE_DEC   0x04    // -d, --two-bytes-decimal
+#define WHEXD_MODE_ONE_BYTE_CHR   0x05    // -c, --one-byte-char
+#define WHEXD_MODE_CANONICAL      0x06    // -C, --canonical
 
 // Formats
-#define __WHEXD_FMT_ADDR_07x        "%07x"  // Default address print format
-#define __WHEXD_FMT_ADDR_08x        "%08x"  // Only used in Canonical print mode
-#define __WHEXD_FMT_TWO_BYTE_HEX    "%04x"
-#define __WHEXD_FMT_ONE_BYTE_HEX    "%02x"
-#define __WHEXD_FMT_ONE_BYTE_OCT    "%03o"
-#define __WHEXD_FMT_TWO_BYTE_OCT    " %06o"
-#define __WHEXD_FMT_TWO_BYTE_DEC    "  %05u"
-#define __WHEXD_FMT_ONE_BYTE_CHR    "%c"
+#define WHEXD_FMT_ADDR_07x      "%07x"  // Default address print format
+#define WHEXD_FMT_ADDR_08x      "%08x"  // Only used in Canonical print mode
+#define WHEXD_FMT_TWO_BYTE_HEX  "%04x"
+#define WHEXD_FMT_ONE_BYTE_HEX  "%02x"
+#define WHEXD_FMT_ONE_BYTE_OCT  "%03o"
+#define WHEXD_FMT_TWO_BYTE_OCT  " %06o"
+#define WHEXD_FMT_TWO_BYTE_DEC  "  %05u"
+#define WHEXD_FMT_ONE_BYTE_CHR  "%c"
+#define WHEXD_FMT_MAX_SIZE      7U  
 
-#define __WHEXD_FMT_ADDR_07x_ID 0x01
-#define __WHEXD_FMT_ADDR_08x_ID 0x02
+#define WHEXD_FMT_ADDR_07x_ID   0x01
+#define WHEXD_FMT_ADDR_08x_ID   0x02
+#define WHEXD_FMT_ADDR_MAX_SIZE 5U
 
-// Read 16 bytes at a time
 #define __WHEXD_MAX_BYTES_READ  16U
 
-typedef struct __whexd_mode {
+typedef struct whexd_mode_t {
     u8   print_mode;
     u8   verbose;
     u32  skip_bytes;
     u32  length;
-    char addr_fmt[5];
-    char byte_fmt[7];
+    char addr_fmt[WHEXD_FMT_ADDR_MAX_SIZE];
+    char byte_fmt[WHEXD_FMT_MAX_SIZE];
     u8   base;
-} __whexd_mode;
+} whexd_mode_t;
 
-void __whexd_init_mode(__whexd_mode *mode)
+void whexd_init_mode(whexd_mode_t *mode)
 {
-    mode->print_mode = __WHEXD_MODE_TWO_BYTE_HEX;
+    mode->print_mode = WHEXD_MODE_TWO_BYTE_HEX;
     mode->verbose    = 0;
     mode->length     = UINT32_MAX;
     mode->skip_bytes = 0;
-    strcpy_s(mode->addr_fmt, 10U, __WHEXD_FMT_ADDR_07x);
-    strcpy_s(mode->byte_fmt, 10U, __WHEXD_FMT_TWO_BYTE_HEX);
+    strcpy_s(mode->addr_fmt, 10U, WHEXD_FMT_ADDR_07x);
+    strcpy_s(mode->byte_fmt, 10U, WHEXD_FMT_TWO_BYTE_HEX);
     mode->base       = 16;
 }
 
@@ -115,7 +134,7 @@ inline void __whexd_print_ascii(size_t bytes_read)
     printf("%s", "|");
 }
 
-char __whexd_parse_args(int argc, char *argv[], __whexd_mode *mode, char *filename)
+char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filename)
 {
     if (mode == NULL || filename == NULL)
         return -2;
@@ -170,7 +189,17 @@ char __whexd_parse_args(int argc, char *argv[], __whexd_mode *mode, char *filena
         {
             __whexd_print_version();
         }
-        else if (strchr(argv[i], '-') != NULL)
+        else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--one-byte-octal") == 0)
+        {
+            mode->print_mode = WHEXD_MODE_ONE_BYTE_OCT;
+            strcpy_s(mode->byte_fmt, WHEXD_FMT_MAX_SIZE, WHEXD_FMT_ONE_BYTE_OCT);
+        }
+        else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--two-byte-octal") == 0)
+        {
+            mode->print_mode = WHEXD_MODE_TWO_BYTE_OCT;
+            strcpy_s(mode->byte_fmt, WHEXD_FMT_MAX_SIZE, WHEXD_FMT_TWO_BYTE_OCT);
+        }
+        else if (strchr(argv[i], '-') != NULL)  // <- This must be the last else if
         {
             fprintf(stderr, "whexd: invalid option -- '%s'\n", argv[i]);
             return -1;
@@ -194,31 +223,24 @@ char __whexd_parse_args(int argc, char *argv[], __whexd_mode *mode, char *filena
     return 1;
 }
 
-char whexdump(int argc, char *argv[])
+char whexdump(const char *filename, const whexd_mode_t *mode)
 {    
-    __whexd_mode mode;
-    __whexd_init_mode(&mode);
-
-    char filename[_MAX_PATH];
-    if (__whexd_parse_args(argc, argv, &mode, &filename[0]) != 1)
-        return -1;
-
     FILE *file;
     fopen_s(&file, filename, "rb");
 
     if (file == NULL)
         return -1;
 
-    const u8 byte_step = 2 - (mode.print_mode & 0x01);
+    const u8 byte_step = 2 - (mode->print_mode & 0x01);
     size_t bytes_read = 0, addr = 0x00, byte_count = 0;
 
-    addr += mode.skip_bytes;
-    fseek(file, mode.skip_bytes, SEEK_SET);
+    addr += mode->skip_bytes;
+    fseek(file, mode->skip_bytes, SEEK_SET);
 
     bytes_read = fread(__whexd_buf, 1U, __WHEXD_MAX_BYTES_READ, file);
-    while (bytes_read == __WHEXD_MAX_BYTES_READ && byte_count < mode.length)
+    while (bytes_read == __WHEXD_MAX_BYTES_READ && byte_count < mode->length)
     {
-        if (!mode.verbose &&
+        if (!mode->verbose &&
             !memcmp(__whexd_buf, __whexd_prev, __WHEXD_MAX_BYTES_READ))
         {
             if (!__whexd_identical_line)
@@ -227,8 +249,8 @@ char whexdump(int argc, char *argv[])
         }
         else
         {
-            __whexd_print_address(addr, mode.addr_fmt);
-            __whexd_print_bytes(__WHEXD_MAX_BYTES_READ, byte_step, mode.byte_fmt);
+            __whexd_print_address(addr, mode->addr_fmt);
+            __whexd_print_bytes(__WHEXD_MAX_BYTES_READ, byte_step, mode->byte_fmt);
 
             memcpy(__whexd_prev, __whexd_buf, __WHEXD_MAX_BYTES_READ);
             __whexd_identical_line = 0;
@@ -246,11 +268,11 @@ char whexdump(int argc, char *argv[])
     {
         __whexd_buf[bytes_read] = 0x00;
 
-        __whexd_print_address(addr, mode.addr_fmt);
-        __whexd_print_bytes(bytes_read, byte_step, mode.byte_fmt);
+        __whexd_print_address(addr, mode->addr_fmt);
+        __whexd_print_bytes(bytes_read, byte_step, mode->byte_fmt);
     }
 
-    __whexd_print_address(addr + bytes_read, mode.addr_fmt);
+    __whexd_print_address(addr + bytes_read, mode->addr_fmt);
     __whexd_newline();
 
     return EXIT_SUCCESS;
