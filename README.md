@@ -14,7 +14,9 @@ You can include the header file <code>whexd.h</code> in your project.
    <li>Verbose printing</li>
    <li>Printing 16-bit values in hexadecimal format</li>
    <li>Printing 16-bit values in octal format</li>
-   <li>Printing 8-but values in octal format</li>
+   <li>Printing 16-bit values in decimal format</li>
+   <li>Printing 8-bit values in octal format</li>
+   <li>Printing 8-bit values in character format</li>
 </ul>
 
 I will add the rest of the printing formats in the future. <br>

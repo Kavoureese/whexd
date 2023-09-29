@@ -19,7 +19,7 @@
 #ifndef WHEXD_H
 #define WHEXD_H
 
-#define VERSION "v0.2"
+#define VERSION "v0.3"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +36,6 @@ typedef uint8_t u8;
 
 // Print modes
 #define WHEXD_MODE_TWO_BYTE_HEX   0x00    // -x, --two-bytes-hex (Default)
-#define WHEXD_MODE_ONE_BYTE_HEX   0x01    // -X, --one-byte-hex
 #define WHEXD_MODE_TWO_BYTE_OCT   0x02    // -o, --two-bytes-octal
 #define WHEXD_MODE_ONE_BYTE_OCT   0x03    // -b, --one-byte-octal
 #define WHEXD_MODE_TWO_BYTE_DEC   0x04    // -d, --two-bytes-decimal
@@ -51,7 +50,6 @@ typedef uint8_t u8;
 #define WHEXD_FMT_ONE_BYTE_OCT  "%03o"
 #define WHEXD_FMT_TWO_BYTE_OCT  " %06o"
 #define WHEXD_FMT_TWO_BYTE_DEC  "  %05u"
-#define WHEXD_FMT_ONE_BYTE_CHR  "%c"
 #define WHEXD_FMT_MAX_SIZE      7U  
 
 #define WHEXD_FMT_ADDR_07x_ID   0x01
@@ -60,14 +58,13 @@ typedef uint8_t u8;
 
 #define __WHEXD_MAX_BYTES_READ  16U
 
-typedef struct whexd_mode_t {
+typedef struct whexd_mode {
     u8   print_mode;
     u8   verbose;
     u32  skip_bytes;
     u32  length;
     char addr_fmt[WHEXD_FMT_ADDR_MAX_SIZE];
     char byte_fmt[WHEXD_FMT_MAX_SIZE];
-    u8   base;
 } whexd_mode_t;
 
 void whexd_init_mode(whexd_mode_t *mode)
@@ -78,7 +75,6 @@ void whexd_init_mode(whexd_mode_t *mode)
     mode->skip_bytes = 0;
     strcpy_s(mode->addr_fmt, 10U, WHEXD_FMT_ADDR_07x);
     strcpy_s(mode->byte_fmt, 10U, WHEXD_FMT_TWO_BYTE_HEX);
-    mode->base       = 16;
 }
 
 static u8 __whexd_buf[__WHEXD_MAX_BYTES_READ] = {0},
@@ -97,7 +93,7 @@ void __whexd_print_version(void);
 inline void __whexd_print_bytes(size_t bytes_read, u8 step, const char *fmt)
 {
     u16 bytes;
-    for (u8 i = 0; i < bytes_read; i += step)
+    for (u32 i = 0; i < bytes_read; i += step)
     {
         printf(" ");
 
@@ -107,15 +103,44 @@ inline void __whexd_print_bytes(size_t bytes_read, u8 step, const char *fmt)
     __whexd_newline();
 }
 
-inline void __whexd_print_decimal(size_t bytes_read, u8 step, const char *fmt)
+inline void __whexd_print_decimal(size_t bytes_read, const char *fmt)
 {
     u16 num;
-    for (u8 i = 0; i < bytes_read; i += step)
+    for (u32 i = 0; i < bytes_read; i += 2U)
     {
         printf(" ");
 
         num = *((u16*)(__whexd_buf + i));
-        printf(fmt, num - (num / 100) * (step & 1) * 100);
+        printf(fmt, num);
+    }
+    __whexd_newline();
+}
+
+inline void __whexd_print_characters(size_t bytes_read)
+{
+    for (u32 i = 0; i < bytes_read; ++i)
+    {
+        printf("  ");
+        switch(__whexd_buf[i])
+        {
+            case '\0': printf("%s", "\\0"); break;
+            case '\a': printf("%s", "\\a"); break;
+            case '\b': printf("%s", "\\b"); break;
+            case '\t': printf("%s", "\\t"); break;
+            case '\n': printf("%s", "\\n"); break;
+            case '\v': printf("%s", "\\v"); break;
+            case '\f': printf("%s", "\\f"); break;
+            case '\r': printf("%s", "\\r"); break;
+            default:
+            {
+                if (__whexd_buf[i] >= __WHEXD_PRINTABLE_CHARS_START &&
+                    __whexd_buf[i] <= __WHEXD_PRINTABLE_CHARS_END)
+                {
+                    printf(" %c", __whexd_buf[i]);
+                    break;
+                }
+            }
+        }
     }
     __whexd_newline();
 }
@@ -123,7 +148,7 @@ inline void __whexd_print_decimal(size_t bytes_read, u8 step, const char *fmt)
 inline void __whexd_print_ascii(size_t bytes_read)
 {
     printf("%s", " |");
-    for (u8 i = 0; i < bytes_read; ++i)
+    for (u32 i = 0; i < bytes_read; ++i)
     {
         if (__whexd_buf[i] >= __WHEXD_PRINTABLE_CHARS_START &&
             __whexd_buf[i] <= __WHEXD_PRINTABLE_CHARS_END)
@@ -137,9 +162,9 @@ inline void __whexd_print_ascii(size_t bytes_read)
 char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filename)
 {
     if (mode == NULL || filename == NULL)
-        return -2;
+        return EXIT_FAILURE;
 
-    for(u8 i = 1; i < argc; ++i)
+    for(int32_t i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "-n") == 0)
         {
@@ -152,7 +177,7 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
                 if (res == 0)
                 {
                     fprintf(stderr, "whexd: failed to parse length: '%s': Invalid argument\n", argv[i + 1]);
-                    return -1;
+                    return EXIT_FAILURE;
                 }
             }
 
@@ -170,7 +195,7 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
                 if (skip == 0)
                 {
                     fprintf(stderr, "whexd: failed to parse offset: '%s': Invalid argument\n", argv[i + 1]);
-                    return -1;
+                    return EXIT_FAILURE;
                 }
             }
 
@@ -199,10 +224,20 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
             mode->print_mode = WHEXD_MODE_TWO_BYTE_OCT;
             strcpy_s(mode->byte_fmt, WHEXD_FMT_MAX_SIZE, WHEXD_FMT_TWO_BYTE_OCT);
         }
+        else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--one-byte-char") == 0)
+        {
+            mode->print_mode = WHEXD_MODE_ONE_BYTE_CHR;
+            strcpy_s(mode->byte_fmt, WHEXD_FMT_MAX_SIZE, WHEXD_FMT_TWO_BYTE_OCT);
+        }
+        else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--two-bytes-decimal") == 0)
+        {
+            mode->print_mode = WHEXD_MODE_TWO_BYTE_DEC;
+            strcpy_s(mode->byte_fmt, WHEXD_FMT_MAX_SIZE, WHEXD_FMT_TWO_BYTE_DEC);
+        }
         else if (strchr(argv[i], '-') != NULL)  // <- This must be the last else if
         {
             fprintf(stderr, "whexd: invalid option -- '%s'\n", argv[i]);
-            return -1;
+            return EXIT_FAILURE;
         }
         else
         {
@@ -212,7 +247,7 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
             if (test == NULL)
             {
                 fprintf(stderr, "whexd: %s: No such file or directory\n", argv[i]);
-                return -1;
+                return EXIT_FAILURE;
             }
             
             fclose(test);
@@ -220,7 +255,7 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
         }
     }
 
-    return 1;
+    return EXIT_SUCCESS;
 }
 
 char whexdump(const char *filename, const whexd_mode_t *mode)
@@ -229,7 +264,7 @@ char whexdump(const char *filename, const whexd_mode_t *mode)
     fopen_s(&file, filename, "rb");
 
     if (file == NULL)
-        return -1;
+        return EXIT_FAILURE;
 
     const u8 byte_step = 2 - (mode->print_mode & 0x01);
     size_t bytes_read = 0, addr = 0x00, byte_count = 0;
@@ -250,7 +285,26 @@ char whexdump(const char *filename, const whexd_mode_t *mode)
         else
         {
             __whexd_print_address(addr, mode->addr_fmt);
-            __whexd_print_bytes(__WHEXD_MAX_BYTES_READ, byte_step, mode->byte_fmt);
+            switch (mode->print_mode)
+            {
+                case WHEXD_MODE_TWO_BYTE_HEX:
+                case WHEXD_MODE_TWO_BYTE_OCT:
+                case WHEXD_MODE_ONE_BYTE_OCT:
+                    __whexd_print_bytes(__WHEXD_MAX_BYTES_READ, byte_step, mode->byte_fmt);
+                    break;
+                case WHEXD_MODE_TWO_BYTE_DEC:
+                    __whexd_print_decimal(__WHEXD_MAX_BYTES_READ, mode->byte_fmt);
+                    break;
+                case WHEXD_MODE_ONE_BYTE_CHR:
+                    __whexd_print_characters(__WHEXD_MAX_BYTES_READ);
+                    break;
+                case WHEXD_MODE_CANONICAL:
+                    __whexd_print_bytes(__WHEXD_MAX_BYTES_READ, byte_step, mode->byte_fmt);
+                    __whexd_print_ascii(__WHEXD_MAX_BYTES_READ);
+                    break;
+                default:
+                    return EXIT_FAILURE;
+            }
 
             memcpy(__whexd_prev, __whexd_buf, __WHEXD_MAX_BYTES_READ);
             __whexd_identical_line = 0;
@@ -269,7 +323,26 @@ char whexdump(const char *filename, const whexd_mode_t *mode)
         __whexd_buf[bytes_read] = 0x00;
 
         __whexd_print_address(addr, mode->addr_fmt);
-        __whexd_print_bytes(bytes_read, byte_step, mode->byte_fmt);
+        switch (mode->print_mode)
+        {
+            case WHEXD_MODE_TWO_BYTE_HEX:
+            case WHEXD_MODE_TWO_BYTE_OCT:
+            case WHEXD_MODE_ONE_BYTE_OCT:
+                __whexd_print_bytes(bytes_read, byte_step, mode->byte_fmt);
+                break;
+            case WHEXD_MODE_TWO_BYTE_DEC:
+                __whexd_print_decimal(bytes_read, mode->byte_fmt);
+                break;
+            case WHEXD_MODE_ONE_BYTE_CHR:
+                __whexd_print_characters(bytes_read);
+                break;
+            // case WHEXD_MODE_CANONICAL:
+            //     __whexd_print_bytes(bytes_read, byte_step, mode->byte_fmt);
+            //     __whexd_print_ascii(bytes_read);
+            //     break;
+            default:
+                return EXIT_FAILURE;
+        }
     }
 
     __whexd_print_address(addr + bytes_read, mode->addr_fmt);
