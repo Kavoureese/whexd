@@ -19,7 +19,7 @@
 #ifndef WHEXD_H
 #define WHEXD_H
 
-#define __WHEXD_VERSION "v0.4"
+#define __WHEXD_VERSION "v0.5"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,9 +87,6 @@ static u8 __whexd_identical_line = 0;
 inline void __whexd_print_address(size_t addr, const char *fmt) { printf(fmt, addr); }
 inline void __whexd_newline(void) { printf("%s", "\n"); }
 
-void __whexd_print_help(void);
-void __whexd_print_version(void);
-
 inline void __whexd_print_bytes(size_t offset, size_t bytes_read, u8 step, const char *fmt)
 {
     u16 bytes;
@@ -147,9 +144,14 @@ inline void __whexd_print_characters(size_t bytes_read)
 
 inline void __whexd_print_whitespace(size_t bytes_read)
 {
-    const size_t whitespace = 60U - 10U - (bytes_read * 2) - (bytes_read - 1) - 2U - (bytes_read > 8);
+#define __WHEXD_TOTAL_CHARS_TO_SKIP 60U
+#define __WHEXD_ADDR_CHARS 10U
+    const size_t whitespace = __WHEXD_TOTAL_CHARS_TO_SKIP - __WHEXD_ADDR_CHARS -
+                              (bytes_read * 2) - (bytes_read - 1) - 2U - (bytes_read > 8);
     for (size_t i = 0; i < whitespace; ++i)
         printf(" ");
+#undef __WHEXD_TOTAL_CHARS_TO_SKIP
+#undef __WHEXD_ADDR_CHARS
 }
 
 inline void __whexd_print_ascii(size_t bytes_read)
@@ -173,7 +175,7 @@ char __whexd_parse_args(int argc, char *argv[], whexd_mode_t *mode, char *filena
 
     for(size_t i = 1; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-n") == 0)
+        if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--length") == 0)
         {
             uint32_t res = strtoul(argv[i + 1], NULL, 10);
 
@@ -385,7 +387,21 @@ char whexdump(const char *filename, const whexd_mode_t *mode)
 
 void __whexd_print_help(void)
 {
-    printf("Help text goes here\n");
+    printf("Usage:\n");
+    printf(" whexd.exe [options] <file>\n\n");
+    printf("Display file contents in hexadecimal, decimal, octal, or ascii.\n\n");
+    printf("Options:\n");
+    printf("-b, --one-byte-octal      one-byte octal display\n");
+    printf("-c, --one-byte-char       one byte character display\n");
+    printf("-C, --canonical           canonical hex+ASCII display\n");
+    printf("-d, --two-bytes-decimal   two-byte decimal display\n");
+    printf("-o, --two-bytes-octal     two-byte octal display\n");
+    printf("-x, --two-bytes-hex       two-byte hexadecimal display\n\n");
+    printf("-n, --length <length>     interpret only length bytes of input\n");
+    printf("-s, --skip <offset>       skip offset bytes from the beginning\n");
+    printf("-v, --no-squeezing        output identical lines\n\n");
+    printf("-h, --help                display this help\n");
+    printf("-V, --version             display version\n");
     exit(EXIT_SUCCESS);
 }
 
