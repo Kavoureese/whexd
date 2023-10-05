@@ -50,7 +50,7 @@ typedef uint8_t u8;
 #define WHEXD_FMT_ONE_BYTE_OCT  "%03o"
 #define WHEXD_FMT_TWO_BYTE_OCT  " %06o"
 #define WHEXD_FMT_TWO_BYTE_DEC  "  %05u"
-#define WHEXD_FMT_MAX_SIZE      7U  
+#define WHEXD_FMT_MAX_SIZE      7U
 
 #define WHEXD_FMT_ADDR_07x_ID   0x01
 #define WHEXD_FMT_ADDR_08x_ID   0x02
@@ -83,6 +83,9 @@ static u8 __whexd_buf[__WHEXD_MAX_BYTES_READ] = {0},
 // Flag that indicates if the current bytes are identical to the
 // previously printed
 static u8 __whexd_identical_line = 0;
+
+void __whexd_print_help(void);
+void __whexd_print_version(void);
 
 inline void __whexd_print_address(size_t addr, const char *fmt) { printf(fmt, addr); }
 inline void __whexd_newline(void) { printf("%s", "\n"); }
