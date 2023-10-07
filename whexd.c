@@ -9,5 +9,5 @@ int main(int argc, char *argv[])
     if (__whexd_parse_args(argc, argv, &mode, &filename[0]) != 0)
         return EXIT_FAILURE;
 
-    return whexdump(&filename[0], &mode);
+    return whexdump(stdout, &filename[0], &mode);
 }

@@ -23,5 +23,7 @@ Compile the project and use the executable, compilation should not be a problem 
 ~~I will add the rest of the printing formats in the future.~~ -> **DONE** <br>
 I will NOT however add the <code>--color</code>, <code>--format</code> and <code>--format-file</code> options.
 
-The project is pretty much done, save for a cleanup and bug fixes. <br>
-One last feature i would like to add is the ability to redirect the program's output to whatever stream you pass to it.
+~~One last feature i would like to add is the ability to redirect the program's output to whatever stream you pass to it.~~ -> **DONE** <br> <br>
+
+Version 1.0 -> Feature Complete! <br>
+Only bug fixes from now on.
